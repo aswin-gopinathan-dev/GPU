@@ -12,7 +12,6 @@ SDL_GLContext gOpenGLContext = NULL; // SDL OpenGL Context
 bool gQuit = false; // Exit app
 GLuint gVertexArrayObject = 0; // OpenGL VAO
 GLuint gVertexBufferObject = 0; // OpenGL VBO
-GLuint gVertexBufferObject2 = 0; // OpenGL VBO
 
 
 // Program object for shaders
@@ -107,20 +106,15 @@ void Draw()
 void VertexSpecification()
 {
     // Lives on CPU
-    const std::vector<GLfloat> vertexPositions
+    const std::vector<GLfloat> vertexData
     {
-        -0.8f, -0.8f, 0.0f,
-        0.8f, -0.8f, 0.0f,
-        0.0f, 0.8f, 0.0f
+        -0.8f, -0.8f, 0.0f,  // vertex 1
+        1.0f, 0.0f, 0.0f,   // color 1
+        0.8f, -0.8f, 0.0f,  // vertex 2
+        0.0f, 1.0f, 0.0f,   // color 2
+        0.0f, 0.8f, 0.0f,   // vertex 3
+        0.0f, 0.0f, 1.0f    // color 3  
     };
-
-    const std::vector<GLfloat> vertexColors
-    {
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f
-    };
-
     
     // Setup the GPU part
     glGenVertexArrays(1, &gVertexArrayObject);
@@ -129,17 +123,14 @@ void VertexSpecification()
     // Generate VBO
     glGenBuffers(1, &gVertexBufferObject);
     glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
-    glBufferData(GL_ARRAY_BUFFER, vertexPositions.size() * sizeof(GLfloat), vertexPositions.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(GLfloat), vertexData.data(), GL_STATIC_DRAW);
     // Enable position attribute in VAO
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GL_FLOAT), NULL);
 
-    glGenBuffers(1, &gVertexBufferObject2);
-    glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject2);
-    glBufferData(GL_ARRAY_BUFFER, vertexColors.size() * sizeof(GLfloat), vertexColors.data(), GL_STATIC_DRAW);
-    
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GL_FLOAT), (void*)(sizeof(GL_FLOAT)*3));
+
 
     // Cleanup
     glBindVertexArray(0);
