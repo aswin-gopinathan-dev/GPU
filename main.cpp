@@ -1,37 +1,24 @@
 #include <SDL2/SDL.h>
 #include <iostream>
+#include <fstream>
+#include <string>
 #include <vector>
 #include "glad/glad.h"
 
-int gScreenWidth = 640;
+int gScreenWidth = 640; // Window dimension
 int gScreenHeight = 480;
-SDL_Window* gGraphicsApplicationWindow = NULL;
-SDL_GLContext gOpenGLContext = NULL;
-bool gQuit = false;
-GLuint gVertexArrayObject = 0;
-GLuint gVertexBufferObject = 0;
+SDL_Window* gGraphicsApplicationWindow = NULL;  // SDL window
+SDL_GLContext gOpenGLContext = NULL; // SDL OpenGL Context
+bool gQuit = false; // Exit app
+GLuint gVertexArrayObject = 0; // OpenGL VAO
+GLuint gVertexBufferObject = 0; // OpenGL VBO
 
 // Program object for shaders
 GLuint gGraphicsPipelineShaderProgram = 0;
 
-const std::string gVertexShaderSource = 
-    "#version 410 core\n"
-    "in vec4 position;\n"
-    "void main()\n"
-    "{\n"
-        "gl_Position = vec4(position.x, position.y, position.z, position.w);\n"
-    "}\n";
-
-const std::string gFragmentShaderSource = 
-    "#version 410 core\n"
-    "out vec4 color;\n"
-    "void main()\n"
-    "{\n"
-        "color = vec4(1.0f, 0.5f, 0.0f, 1.0f);\n"
-    "}\n";
-
 void GetOpenGLVersion()
 {
+    // Query OpenGL
     std::cout<< "Vendor: "<< glGetString(GL_VENDOR) << std::endl;
     std::cout<< "Renderer: "<< glGetString(GL_RENDERER) << std::endl;
     std::cout<< "Version: "<< glGetString(GL_VERSION) << std::endl;
@@ -41,6 +28,7 @@ void GetOpenGLVersion()
 // Initialize SDL and GLAD library
 void InitializeProgram()
 {
+    // Initialize SDL
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         std::cout<<"SDL2 init failed"<<std::endl;
@@ -48,13 +36,15 @@ void InitializeProgram()
     }
 
 
+    // Setup OpenGL Context
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4); // OpenGL version to use
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE); // Use Modern OpenGL
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1); // Enable double buufer
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1); // Enable double buffer
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24); // Depth buffer bits
 
 
+    // Create a window
     gGraphicsApplicationWindow = SDL_CreateWindow("OpenGL Window", 0, 0, 
                                                   gScreenWidth, gScreenHeight, SDL_WINDOW_OPENGL);
     if(gGraphicsApplicationWindow == NULL)
@@ -97,7 +87,7 @@ void PreDraw()
     glDisable(GL_CULL_FACE);
 
     glViewport(0, 0, gScreenWidth, gScreenHeight);
-    glClearColor(1.0f, 1.0f, 0.0f, 1.1f);
+    glClearColor(0.3f, 0.3f, 0.3f, 1.1f);
 
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
@@ -127,14 +117,37 @@ void VertexSpecification()
     glGenVertexArrays(1, &gVertexArrayObject);
     glBindVertexArray(gVertexArrayObject);
 
+    // Generate VBO
     glGenBuffers(1, &gVertexBufferObject);
     glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
     glBufferData(GL_ARRAY_BUFFER, vertexPosition.size() * sizeof(GLfloat), vertexPosition.data(), GL_STATIC_DRAW);
 
+    // Enable position attribute in VAO
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+    // Cleanup
     glBindVertexArray(0);
     glDisableVertexAttribArray(0);
+}
+
+std::string LoadShaderAsString(const std::string& filename)
+{
+    std::string result = "";
+    
+    std::string line = "";
+    std::ifstream myFile(filename.c_str());
+
+    if(myFile.is_open())
+    {
+        while(std::getline(myFile, line))
+        {
+            result += line + "\n";
+        }
+        myFile.close();
+    }
+
+    return result;
 }
 
 GLuint CompileShader(GLuint type, const std::string& source)
@@ -174,7 +187,9 @@ GLuint CreateShaderProgram(const std::string&vs, const std::string& fs)
 
 void CreateGraphicsPipeline()
 {
-    gGraphicsPipelineShaderProgram = CreateShaderProgram(gVertexShaderSource, gFragmentShaderSource);
+    std::string vertexShaderSource = LoadShaderAsString("./shaders/vert.glsl");
+    std::string fragmentShaderSource = LoadShaderAsString("./shaders/frag.glsl");
+    gGraphicsPipelineShaderProgram = CreateShaderProgram(vertexShaderSource, fragmentShaderSource);
 }
 
 void MainLoop()
@@ -185,6 +200,7 @@ void MainLoop()
         PreDraw();
         Draw();
 
+        // Update screen
         SDL_GL_SwapWindow(gGraphicsApplicationWindow);
     }
 }
@@ -197,14 +213,19 @@ void CleanUp()
 
 int main() 
 {
+    // 1. Setup the graphics program
     InitializeProgram();
 
+    // 2. Setup our geometry
     VertexSpecification();
 
+    // 3. Create graphcis pipeline - vertex & fragment shader
     CreateGraphicsPipeline();
 
+    // 4. Application main loop
     MainLoop();
 
+    // 5. Cleanup on exit
     CleanUp();
 
     return 0;
