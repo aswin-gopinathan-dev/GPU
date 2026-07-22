@@ -12,6 +12,8 @@ SDL_GLContext gOpenGLContext = NULL; // SDL OpenGL Context
 bool gQuit = false; // Exit app
 GLuint gVertexArrayObject = 0; // OpenGL VAO
 GLuint gVertexBufferObject = 0; // OpenGL VBO
+GLuint gVertexBufferObject2 = 0; // OpenGL VBO
+
 
 // Program object for shaders
 GLuint gGraphicsPipelineShaderProgram = 0;
@@ -76,7 +78,7 @@ void Input()
     SDL_Event e;
     while(SDL_PollEvent(&e) != 0)
     {
-        if(e.type == SDL_QUIT)
+        if(e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE))
             gQuit = true;
     }
 }
@@ -105,11 +107,18 @@ void Draw()
 void VertexSpecification()
 {
     // Lives on CPU
-    const std::vector<GLfloat> vertexPosition
+    const std::vector<GLfloat> vertexPositions
     {
         -0.8f, -0.8f, 0.0f,
         0.8f, -0.8f, 0.0f,
         0.0f, 0.8f, 0.0f
+    };
+
+    const std::vector<GLfloat> vertexColors
+    {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f
     };
 
     
@@ -120,15 +129,22 @@ void VertexSpecification()
     // Generate VBO
     glGenBuffers(1, &gVertexBufferObject);
     glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
-    glBufferData(GL_ARRAY_BUFFER, vertexPosition.size() * sizeof(GLfloat), vertexPosition.data(), GL_STATIC_DRAW);
-
+    glBufferData(GL_ARRAY_BUFFER, vertexPositions.size() * sizeof(GLfloat), vertexPositions.data(), GL_STATIC_DRAW);
     // Enable position attribute in VAO
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
+    glGenBuffers(1, &gVertexBufferObject2);
+    glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject2);
+    glBufferData(GL_ARRAY_BUFFER, vertexColors.size() * sizeof(GLfloat), vertexColors.data(), GL_STATIC_DRAW);
+    
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
     // Cleanup
     glBindVertexArray(0);
     glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
 }
 
 std::string LoadShaderAsString(const std::string& filename)
@@ -165,6 +181,27 @@ GLuint CompileShader(GLuint type, const std::string& source)
     const char* src = source.c_str();
     glShaderSource(shaderObject, 1, &src, NULL);
     glCompileShader(shaderObject);
+
+    // To get shader compilation error
+    GLint success = GL_FALSE;
+    glGetShaderiv(shaderObject, GL_COMPILE_STATUS, &success);
+
+    if (success != GL_TRUE)
+    {
+        GLint logLength = 0;
+        glGetShaderiv(shaderObject, GL_INFO_LOG_LENGTH, &logLength);
+
+        std::vector<GLchar> errorLog(logLength);
+        glGetShaderInfoLog(
+                shaderObject,
+                logLength,
+                nullptr,
+                errorLog.data()
+                );
+
+        std::cerr << "Shader compilation failed:\n"
+            << errorLog.data() << '\n';
+    }
 
     return shaderObject;
 }
