@@ -1,9 +1,12 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_scancode.h>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
 #include "glad/glad.h"
+#include "glm/glm.hpp"
 
 int gScreenWidth = 640; // Window dimension
 int gScreenHeight = 480;
@@ -12,6 +15,7 @@ SDL_GLContext gOpenGLContext = NULL; // SDL OpenGL Context
 bool gQuit = false; // Exit app
 GLuint gVertexArrayObject = 0; // OpenGL VAO
 GLuint gVertexBufferObject = 0; // OpenGL VBO
+float g_uOffset = 0.0f;
 
 
 // Program object for shaders
@@ -79,6 +83,14 @@ void Input()
     {
         if(e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE))
             gQuit = true;
+
+        const Uint8* state = SDL_GetKeyboardState(NULL);
+        if(state[SDL_SCANCODE_UP]) {
+            g_uOffset += 0.01f;
+        }
+        if(state[SDL_SCANCODE_DOWN]) { 
+            g_uOffset -= 0.01f;     
+        }
     }
 }
 
@@ -93,6 +105,8 @@ void PreDraw()
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     glUseProgram(gGraphicsPipelineShaderProgram);
+    GLint location = glGetUniformLocation(gGraphicsPipelineShaderProgram, "uOffset");
+    glUniform1f(location, g_uOffset);
 }
 
 void Draw()

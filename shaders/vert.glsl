@@ -5,10 +5,12 @@
 layout(location=0) in vec4 position;
 layout(location=1) in vec3 color;
 
+uniform float uOffset;
+
 out vec3 v_vertexColor;
 void main()
 {
     v_vertexColor = color;
-    gl_Position = vec4(position.x, position.y, position.z, 1.0f);
+    gl_Position = vec4(position.x, position.y + uOffset, position.z, 1.0f);
 }
 
